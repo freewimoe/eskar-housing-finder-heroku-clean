@@ -26,7 +26,6 @@ data/
 models/
 !models/esk_suitability_model.pkl
 eskar.log
-data_generator.py
 debug_generator.py
 debug_init.py
 demo_formatting.py
