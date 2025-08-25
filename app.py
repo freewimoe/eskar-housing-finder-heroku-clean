@@ -170,10 +170,10 @@ ESK_LOCATION = {"lat": 49.0464700608647, "lon": 8.44612290974462, "name": "Europ
 MAJOR_EMPLOYERS = {
     'SAP Walldorf': {"lat": 49.2933, "lon": 8.6428, "color": "darkred"},
     'SAP Karlsruhe': {"lat": 49.0233, "lon": 8.4103, "color": "darkred"},
-    'Ionos Karlsruhe': {"lat": 49.0089, "lon": 8.3858, "color": "orange"},
-    'KIT Campus South': {"lat": 49.0069, "lon": 8.4037, "color": "orange"},
-    'KIT Campus North': {"lat": 49.0943, "lon": 8.4347, "color": "orange"},
-    'Research Center': {"lat": 49.0930, "lon": 8.4279, "color": "orange"}
+    'Ionos Karlsruhe': {"lat": 49.0089, "lon": 8.3858, "color": "darkred"},
+    'KIT Campus South': {"lat": 49.0069, "lon": 8.4037, "color": "darkred"},
+    'KIT Campus North': {"lat": 49.0943, "lon": 8.4347, "color": "darkred"},
+    'Research Center': {"lat": 49.0930, "lon": 8.4279, "color": "darkred"}
 }
 
 # Reference Points for Karlsruhe navigation
@@ -688,14 +688,14 @@ def show_interactive_map(df):
     
     # Add property markers with color coding based on ESK score
     for idx, row in map_df.iterrows():
-        # Color based on ESK suitability score - Folium compatible colors only
-        if row['esk_suitability_score'] >= 80:
-            color = 'orange'  # Excellent Properties (closest to star-like in Folium)
+        # Color based on ESK suitability score (1-10 scale)
+        if row['esk_suitability_score'] >= 8.0:
+            color = 'orange'  # Excellent Properties
             score_category = 'Excellent'
-        elif row['esk_suitability_score'] >= 70:
+        elif row['esk_suitability_score'] >= 7.0:
             color = 'lightgreen'  # Good Properties
             score_category = 'Good'
-        elif row['esk_suitability_score'] >= 60:
+        elif row['esk_suitability_score'] >= 6.0:
             color = 'lightblue'  # Fair Properties
             score_category = 'Fair'
         else:
@@ -711,7 +711,7 @@ def show_interactive_map(df):
             <p><b>🛏️ Bedrooms:</b> {row['bedrooms']}</p>
             <p><b>📐 Area:</b> {row.get('area_sqm', row.get('sqft', 'N/A'))} m²</p>
             <p><b>🏫 Distance to ESK:</b> {row['distance_to_esk']:.1f} km</p>
-            <p><b>⭐ ESK Score:</b> {row['esk_suitability_score']:.0f}/100 ({score_category})</p>
+            <p><b>⭐ ESK Score:</b> {row['esk_suitability_score']:.1f}/10 ({score_category})</p>
             <p><b>🏠 Type:</b> {row['property_type'].title()}</p>
             {f"<p><b>🌳 Garden:</b> {'Yes' if row.get('garden', False) else 'No'}</p>" if 'garden' in row else ""}
         </div>
@@ -733,11 +733,11 @@ def show_interactive_map(df):
         st.markdown("""
         **🗺️ Map Legend:**
         - 🔴 European School Karlsruhe
-        - 💼 Major Employers - SAP / KIT/Ionos/JRC
-        - 🟠 Excellent Properties (ESK Score ≥ 80)
-        - 🟢 Good Properties (ESK Score ≥ 70)
-        - 🔵 Fair Properties (ESK Score ≥ 60)
-        - ⚪ Basic Properties (ESK Score < 60)
+        - 💼 Major Employers (Dark Red)
+        - 🟠 Excellent Properties (ESK Score ≥ 8.0)
+        - 🟢 Good Properties (ESK Score ≥ 7.0)
+        - 🔵 Fair Properties (ESK Score ≥ 6.0)
+        - ⚪ Basic Properties (ESK Score < 6.0)
         - ⚫📍 Reference Points
         """)
     
@@ -746,7 +746,7 @@ def show_interactive_map(df):
         col2a, col2b = st.columns(2)
         with col2a:
             st.metric("🏠 Properties Shown", len(map_df))
-            st.metric("⭐ Average ESK Score", f"{map_df['esk_suitability_score'].mean():.1f}/100")
+            st.metric("⭐ Average ESK Score", f"{map_df['esk_suitability_score'].mean():.1f}/10")
         with col2b:
             st.metric("💰 Average Price", f"€{map_df['price'].mean():,.0f}")
             st.metric("🏫 Avg Distance to ESK", f"{map_df['distance_to_esk'].mean():.1f} km")
@@ -788,16 +788,22 @@ def main():
         
         st.markdown("---")
         
-        # Use st.session_state to control visibility and trigger scrolling
+        # Use st.session_state to control visibility. The actual scroll is triggered below.
         if st.button("💬 Give Feedback", key="feedback_btn"):
             st.session_state.show_feedback = not st.session_state.get('show_feedback', False)
+            # Set a flag to scroll after the rerun
             if st.session_state.show_feedback:
-                scroll_to_anchor("feedback-section")
+                st.session_state.scroll_to = "feedback-section"
+            else:
+                st.session_state.scroll_to = None
 
         if st.button("📈 Production Analytics", key="analytics_btn"):
             st.session_state.show_analytics = not st.session_state.get('show_analytics', False)
+            # Set a flag to scroll after the rerun
             if st.session_state.show_analytics:
-                scroll_to_anchor("analytics-dashboard")
+                st.session_state.scroll_to = "analytics-dashboard"
+            else:
+                st.session_state.scroll_to = None
 
     # Load data centrally once for all pages that need it
     df = None
@@ -833,6 +839,11 @@ def main():
     st.markdown('<div id="analytics-dashboard"></div>', unsafe_allow_html=True)
     if st.session_state.get('show_analytics', False):
         show_analytics_dashboard()
+
+    # Trigger scroll after the page has been rerendered
+    if st.session_state.get("scroll_to"):
+        scroll_to_anchor(st.session_state.get("scroll_to"))
+        st.session_state.scroll_to = None # Reset after scrolling
     
     # About ESKAR section at bottom of sidebar
     with st.sidebar:
