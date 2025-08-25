@@ -1,0 +1,47 @@
+# Git- und VSCode-Verzeichnisse
+.git/
+.github/
+.vscode/
+
+# Python-Caches und virtuelle Umgebungen
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+env/
+
+# Unnötige Dokumente und Testdateien
+*.md
+notebooks/
+tests/
+docs/
+
+# Lokale Datendateien, die nicht ins Deployment gehören
+*.log
+*.sqlite
+*.db
+data/
+models/
+*.pkl
+eskar.log
+data_generator.py
+debug_generator.py
+debug_init.py
+demo_formatting.py
+emergency_recovery.py
+final_cleanup.py
+final_repairs.py
+fix_esk_location.py
+fix_flake8.py
+fix_imports.py
+fix_init.py
+fix_np_random.py
+fix_pep8.py
+fix_remaining_issues.py
+fix_remaining_lines.py
+fix_weights_final.py
+fix_weights.py
+simple_weights.py
+smart_fix_imports.py
+create_perfect_weights.py
