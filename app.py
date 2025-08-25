@@ -721,8 +721,24 @@ def show_interactive_map(df):
     ]
     st.dataframe(top_map_properties, use_container_width=True)
 
+def inject_scroll_to_anchor_javascript():
+    """Injects JavaScript to scroll to an anchor ID smoothly."""
+    st.markdown("""
+        <script>
+            function scrollToAnchor(anchor_id) {
+                var anchor = document.getElementById(anchor_id);
+                if (anchor) {
+                    anchor.scrollIntoView({behavior: 'smooth', block: 'start'});
+                }
+            }
+        </script>
+    """, unsafe_allow_html=True)
+
 def main():
     """Main application function"""
+    # Inject the scroll-to-anchor JavaScript on every run
+    inject_scroll_to_anchor_javascript()
+
     # Sidebar navigation
     with st.sidebar:
         st.title("🏫 ESKAR Navigation")
@@ -734,7 +750,11 @@ def main():
         )
         
         st.markdown("---")
-    
+        
+        # Use markdown for buttons to allow onclick JS event
+        st.sidebar.markdown('<a href="#" onclick="scrollToAnchor(\'feedback-section\'); return false;" style="text-decoration: none;"><button style="width:100%; border: 1px solid #ccc; padding: 8px; border-radius: 5px; background-color: #f0f2f6;">💬 Give Feedback</button></a>', unsafe_allow_html=True)
+        st.sidebar.markdown('<a href="#" onclick="scrollToAnchor(\'analytics-dashboard\'); return false;" style="text-decoration: none;"><button style="width:100%; margin-top: 5px; border: 1px solid #ccc; padding: 8px; border-radius: 5px; background-color: #f0f2f6;">📈 Production Analytics</button></a>', unsafe_allow_html=True)
+
     # Load data centrally once for all pages that need it
     df = None
     if page in ["🔍 Property Search", "🗺️ Interactive Map", "🤖 AI Predictions", "📊 Market Analytics"]:
@@ -761,13 +781,12 @@ def main():
     elif page == "📊 Market Analytics":
         show_market_analytics(df)
     
-    # Add feedback page with persistent state
-    if st.sidebar.button("💬 Give Feedback"):
-        st.session_state.show_feedback = True
+    # These sections are always available at the bottom of the page content
+    st.markdown('<div id="feedback-section"></div>', unsafe_allow_html=True)
+    show_feedback_section()
     
-    # Add analytics page with persistent state
-    if st.sidebar.button("📈 Production Analytics"):
-        st.session_state.show_analytics = True
+    st.markdown('<div id="analytics-dashboard"></div>', unsafe_allow_html=True)
+    show_analytics_dashboard()
     
     # About ESKAR section at bottom of sidebar
     with st.sidebar:
@@ -780,13 +799,6 @@ def main():
         st.markdown("• 🤖 ML price predictions")  
         st.markdown("• 📊 Market insights")
         st.markdown("• 🗺️ Karlsruhe expertise")
-    
-    if st.session_state.get('show_feedback', False):
-        show_feedback_section()
-    
-    # Show analytics if requested
-    if st.session_state.get('show_analytics', False):
-        show_analytics_dashboard()
     
     # Footer with production info
     st.markdown("---")
@@ -804,13 +816,6 @@ def main():
 def show_feedback_section():
     """Enhanced feedback collection with fallback functionality"""
     st.subheader("💬 Quick Feedback")
-    
-    # Add close button
-    col1, col2 = st.columns([6, 1])
-    with col2:
-        if st.button("✖️ Close"):
-            st.session_state.show_feedback = False
-            st.rerun()
     
     # Create feedback form regardless of feedback_system availability
     with st.form("feedback_form"):
@@ -845,22 +850,13 @@ def show_feedback_section():
                         comments
                     )
                     st.success("✅ Thank you! Your feedback has been recorded in our production system.")
-                    # Close feedback form after successful submission
-                    st.session_state.show_feedback = False
-                    st.rerun()
                 except Exception as e:
                     st.warning(f"⚠️ Production system unavailable: {e}")
                     # Fallback to local storage
                     _store_feedback_locally(satisfaction, feedback_type, comments)
-                    # Close feedback form after submission
-                    st.session_state.show_feedback = False
-                    st.rerun()
             else:
                 # Fallback feedback storage
                 _store_feedback_locally(satisfaction, feedback_type, comments)
-                # Close feedback form after submission
-                st.session_state.show_feedback = False
-                st.rerun()
 
 def _store_feedback_locally(satisfaction, feedback_type, comments):
     """Store feedback locally when production system is unavailable"""
@@ -907,13 +903,6 @@ def _store_feedback_locally(satisfaction, feedback_type, comments):
 def show_analytics_dashboard():
     """Simple analytics dashboard for production insights"""
     st.subheader("📈 ESKAR Production Analytics")
-    
-    # Add close button
-    col1, col2 = st.columns([6, 1])
-    with col2:
-        if st.button("✖️ Schließen"):
-            st.session_state.show_analytics = False
-            st.rerun()
     
     # Display basic analytics
     st.markdown("### 🏠 Property Distribution")
