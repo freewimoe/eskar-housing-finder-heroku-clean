@@ -22,8 +22,9 @@ docs/
 *.sqlite
 *.db
 data/
+!data/housing_data.csv
 models/
-*.pkl
+!models/esk_suitability_model.pkl
 eskar.log
 data_generator.py
 debug_generator.py
