@@ -93,10 +93,46 @@ st.markdown("""
         border-radius: 0.25rem;
         border-left: 3px solid #f59e0b;
     }
+    .sidebar-button {
+        width: 100%;
+        display: block;
+        padding: 8px;
+        border-radius: 5px;
+        background-color: #f0f2f6;
+        color: #31333F;
+        border: 1px solid #f0f2f6;
+        text-align: center;
+        text-decoration: none;
+        margin-bottom: 5px;
+        transition: background-color 0.2s, border-color 0.2s;
+    }
+    .sidebar-button:hover {
+        background-color: #e6eaf1;
+        border-color: #3b82f6;
+    }
+    .sidebar-button:active {
+        background-color: #dce1e8;
+        transform: translateY(1px);
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# Initialize production systems
+# --- JAVASCRIPT FOR SCROLLING ---
+def scroll_to_anchor(anchor_id):
+    """Inject JavaScript to scroll to an anchor ID after a short delay."""
+    import time
+    # Small delay to ensure the element is rendered before scrolling
+    time.sleep(0.1)
+    st.markdown(f"""
+        <script>
+            var anchor = document.getElementById('{anchor_id}');
+            if (anchor) {{
+                anchor.scrollIntoView({{behavior: 'smooth', block: 'start'}});
+            }}
+        </script>
+    """, unsafe_allow_html=True)
+
+# --- INITIALIZATION ---
 @st.cache_resource
 def initialize_production_systems():
     """Initialize all production ML and analytics systems"""
@@ -603,7 +639,8 @@ def show_interactive_map(df):
     with st.sidebar:
         st.subheader("🎯 Map Filters")
         max_distance = st.slider("Max Distance to ESK (km)", 0.5, 15.0, 8.0, 0.5)
-        min_score = st.slider("Min ESK Suitability Score", 20, 100, 60, 5)
+        # Corrected scale for ESK suitability score (1-10)
+        min_score = st.slider("Min ESK Suitability Score", 1.0, 10.0, 6.0, 0.5)
         max_price = st.slider("Max Price (€)", 200000, 2000000, 800000, 50000)
     
     # Filter data for map
@@ -751,9 +788,16 @@ def main():
         
         st.markdown("---")
         
-        # Use markdown for buttons to allow onclick JS event
-        st.sidebar.markdown('<a href="#" onclick="scrollToAnchor(\'feedback-section\'); return false;" style="text-decoration: none;"><button style="width:100%; border: 1px solid #ccc; padding: 8px; border-radius: 5px; background-color: #f0f2f6;">💬 Give Feedback</button></a>', unsafe_allow_html=True)
-        st.sidebar.markdown('<a href="#" onclick="scrollToAnchor(\'analytics-dashboard\'); return false;" style="text-decoration: none;"><button style="width:100%; margin-top: 5px; border: 1px solid #ccc; padding: 8px; border-radius: 5px; background-color: #f0f2f6;">📈 Production Analytics</button></a>', unsafe_allow_html=True)
+        # Use st.session_state to control visibility and trigger scrolling
+        if st.button("💬 Give Feedback", key="feedback_btn"):
+            st.session_state.show_feedback = not st.session_state.get('show_feedback', False)
+            if st.session_state.show_feedback:
+                scroll_to_anchor("feedback-section")
+
+        if st.button("📈 Production Analytics", key="analytics_btn"):
+            st.session_state.show_analytics = not st.session_state.get('show_analytics', False)
+            if st.session_state.show_analytics:
+                scroll_to_anchor("analytics-dashboard")
 
     # Load data centrally once for all pages that need it
     df = None
@@ -781,12 +825,14 @@ def main():
     elif page == "📊 Market Analytics":
         show_market_analytics(df)
     
-    # These sections are always available at the bottom of the page content
+    # Add anchor points and conditionally show sections
     st.markdown('<div id="feedback-section"></div>', unsafe_allow_html=True)
-    show_feedback_section()
-    
+    if st.session_state.get('show_feedback', False):
+        show_feedback_section()
+
     st.markdown('<div id="analytics-dashboard"></div>', unsafe_allow_html=True)
-    show_analytics_dashboard()
+    if st.session_state.get('show_analytics', False):
+        show_analytics_dashboard()
     
     # About ESKAR section at bottom of sidebar
     with st.sidebar:
@@ -850,13 +896,19 @@ def show_feedback_section():
                         comments
                     )
                     st.success("✅ Thank you! Your feedback has been recorded in our production system.")
+                    st.session_state.show_feedback = False
+                    st.rerun()
                 except Exception as e:
                     st.warning(f"⚠️ Production system unavailable: {e}")
                     # Fallback to local storage
                     _store_feedback_locally(satisfaction, feedback_type, comments)
+                    st.session_state.show_feedback = False
+                    st.rerun()
             else:
                 # Fallback feedback storage
                 _store_feedback_locally(satisfaction, feedback_type, comments)
+                st.session_state.show_feedback = False
+                st.rerun()
 
 def _store_feedback_locally(satisfaction, feedback_type, comments):
     """Store feedback locally when production system is unavailable"""
