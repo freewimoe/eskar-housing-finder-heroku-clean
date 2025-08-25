@@ -153,31 +153,32 @@ REFERENCE_POINTS = {
 
 @st.cache_data
 def calculate_esk_suitability_score(df):
-    """Calculate ESK suitability score based on distance and features"""
+    """Calculate ESK suitability score based on distance and features (1-10 scale)"""
     import numpy as np
     
-    # Base score from distance (closer = higher score)
-    # Max distance in dataset, score inversely proportional
-    max_distance = df['distance_to_esk'].max()
-    distance_score = (max_distance - df['distance_to_esk']) / max_distance * 100
+    # Base score from distance (max 5 points)
+    max_dist = df['distance_to_esk'].max()
+    # Avoid division by zero if all properties are at the same location
+    distance_score = (max_dist - df['distance_to_esk']) / max_dist * 5 if max_dist > 0 else 0
     
-    # Bonus points for family-friendly features
+    # Bonus points for family-friendly features (max 2.5 points)
     feature_bonus = 0
     if 'garden' in df.columns:
-        feature_bonus += df['garden'] * 10
+        feature_bonus += df['garden'] * 1.5
     if 'balcony' in df.columns:
-        feature_bonus += df['balcony'] * 5
+        feature_bonus += df['balcony'] * 0.5
     if 'garage' in df.columns:
-        feature_bonus += df['garage'] * 5
+        feature_bonus += df['garage'] * 0.5
     
-    # Bonus for optimal bedroom count for families (3-4 bedrooms)
+    # Bonus for optimal bedroom count for families (2.5 points)
     bedroom_bonus = np.where(
-        (df['bedrooms'] >= 3) & (df['bedrooms'] <= 4), 10, 0
+        (df['bedrooms'] >= 3) & (df['bedrooms'] <= 4), 2.5, 0
     )
     
-    # Final score (0-100 scale)
-    total_score = distance_score + feature_bonus + bedroom_bonus
-    return np.clip(total_score, 0, 100)
+    # Final score (1-10 scale), ensuring a base score of at least 1.
+    total_score = 1 + distance_score + feature_bonus + bedroom_bonus
+    # Clip to ensure it's within 1-10 range and round to one decimal
+    return np.round(np.clip(total_score, 1, 10), 1)
 
 @st.cache_data
 def add_missing_columns(df):
